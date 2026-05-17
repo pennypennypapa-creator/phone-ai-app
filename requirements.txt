@@ -1,2 +1,5 @@
 streamlit
 openai
+twilio
+fastapi
+uvicorn
