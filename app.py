@@ -1,28 +1,40 @@
 import streamlit as str
 from openai import OpenAI
+from audio_recorder_component import audio_recorder
 
-# 1. Ασφαλής ανάγνωση του API Key από τα Secrets του Streamlit Cloud
+# 1. Αρχικοποίηση OpenAI
 client = OpenAI(api_key=str.secrets["OPENAI_API_KEY"])
 
 str.title("🎙️ Global AI Phone Note Taker")
-str.write("Ανεβάστε την ηχογράφηση της κλήσης σας (σε οποιαδήποτε γλώσσα).")
+str.write("Πατήστε το μικρόφωνο για να ξεκινήσει η καταγραφή της κλήσης σας.")
 
-# 2. Στοιχείο για ανέβασμα αρχείου ήχου
-uploaded_file = str.file_uploader("Επιλέξτε αρχείο ήχου...", type=["mp3", "wav", "m4a"])
+# 2. Προσθήκη του Live Audio Recorder στην οθόνη
+audio_bytes = audio_recorder(
+    text="Πατήστε για εγγραφή",
+    recording_color="#e74c3c",
+    neutral_color="#34495e",
+    icon_name="microphone",
+    icon_size="2x"
+)
 
-if uploaded_file is not None:
-    # Ξεκινάει αυτόματα η ανάλυση μόλις μπει το αρχείο
+if audio_bytes:
+    # Μόλις σταματήσει η εγγραφή, το AI ξεκινάει αμέσως
     with str.spinner("🤖 Το AI επεξεργάζεται την κλήση σας live..."):
         try:
-            # ΒΗΜΑ A: Μετατροπή ομιλίας σε κείμενο (Speech-to-Text)
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1", 
-                file=uploaded_file
-            )
+            # Αποθήκευση του ήχου σε προσωρινό αρχείο για το Whisper
+            with open("temp_audio.wav", "wb") as f:
+                f.write(audio_bytes)
+            
+            with open("temp_audio.wav", "rb") as audio_file:
+                # ΒΗΜΑ A: Μετατροπή ομιλίας σε κείμενο
+                transcript = client.audio.transcriptions.create(
+                    model="whisper-1", 
+                    file=audio_file
+                )
             
             text_result = transcript.text
             
-            # ΒΗΜΑ B: Δημιουργία Περίληψης και To-Do με LLM
+            # ΒΗΜΑ B: Δημιουργία Περίληψης
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
@@ -41,16 +53,14 @@ if uploaded_file is not None:
                 ]
             )
             
-            # Διορθώθηκε: Προστέθηκε το [0] που έλειπε στο πρώτο κομμάτι του κώδικά σας
             ai_summary = response.choices[0].message.content
 
-            # Εμφάνιση αποτελεσμάτων στην οθόνη
+            # Εμφάνιση αποτελεσμάτων
             str.success("Η ανάλυση ολοκληρώθηκε!")
-            
             str.subheader("📝 Σύνοψη & Εκκρεμότητες (AI Summary)")
             str.write(ai_summary)
             
-            with str.expander("Δείτε όλο το γραπτό κείμενο της κλήσης (Full Transcript)"):
+            with str.expander("Δείτε όλο το γραπτό κείμενο (Full Transcript)"):
                 str.write(text_result)
                 
         except Exception as e:
