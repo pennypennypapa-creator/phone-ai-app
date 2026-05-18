@@ -2,36 +2,24 @@ import streamlit as str
 from openai import OpenAI
 from streamlit_audio_recorder import st_audio_recorder
 
-
 # 1. Αρχικοποίηση OpenAI
 client = OpenAI(api_key=str.secrets["OPENAI_API_KEY"])
 
 str.title("🎙️ Global AI Phone Note Taker")
-str.write("Πατήστε το μικρόφωνο για να ξεκινήσει η καταγραφή της κλήσης σας.")
+str.write("Πατήστε το κουμπί για να ξεκινήσει η καταγραφή.")
 
 # 2. Προσθήκη του Live Audio Recorder στην οθόνη
-audio_bytes = audio_recorder(
-    text="Πατήστε για εγγραφή",
-    recording_color="#e74c3c",
-    neutral_color="#34495e",
-    icon_name="microphone",
-    icon_size="2x"
-)
+audio_bytes = st_audio_recorder()
 
-if audio_bytes:
-    # Μόλις σταματήσει η εγγραφή, το AI ξεκινάει αμέσως
+if audio_bytes is not None:
+    # Μόλις σταματήσει η εγγραφή και υπάρχει ήχος, το AI ξεκινάει
     with str.spinner("🤖 Το AI επεξεργάζεται την κλήση σας live..."):
         try:
-            # Αποθήκευση του ήχου σε προσωρινό αρχείο για το Whisper
-            with open("temp_audio.wav", "wb") as f:
-                f.write(audio_bytes)
-            
-            with open("temp_audio.wav", "rb") as audio_file:
-                # ΒΗΜΑ A: Μετατροπή ομιλίας σε κείμενο
-                transcript = client.audio.transcriptions.create(
-                    model="whisper-1", 
-                    file=audio_file
-                )
+            # ΒΗΜΑ A: Μετατροπή ομιλίας σε κείμενο
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1", 
+                file=("record.wav", audio_bytes, "audio/wav")
+            )
             
             text_result = transcript.text
             
