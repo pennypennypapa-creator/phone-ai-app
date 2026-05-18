@@ -1,6 +1,7 @@
 import streamlit as str
 from openai import OpenAI
-from audio_recorder_component import audio_recorder
+from streamlit_audio_recorder import st_audio_recorder
+
 
 # 1. Αρχικοποίηση OpenAI
 client = OpenAI(api_key=str.secrets["OPENAI_API_KEY"])
