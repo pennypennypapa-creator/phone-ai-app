@@ -1,5 +1,3 @@
 streamlit
 openai
-twilio
-fastapi
-uvicorn
+streamlit-audio-recorder
